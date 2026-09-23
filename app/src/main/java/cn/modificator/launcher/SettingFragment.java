@@ -181,10 +181,10 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
     initDpadFocus(toBack, btnHideFontControl);
 
     // 初始化 UI 状态
-    showStatusBar.getPaint().setStrikeThruText(config.isShowStatusBar());
+    showStatusBar.getPaint().setStrikeThruText(!config.isShowStatusBar());
     hideDivider.getPaint().setStrikeThruText(config.isHideDivider());
     hideDivider.setText(config.isHideDivider() ? "显示分隔线" : "隐藏分隔线");
-    showCustomIcon.getPaint().setStrikeThruText(config.isShowCustomIcon());
+    showCustomIcon.getPaint().setStrikeThruText(!config.isShowCustomIcon());
     updateClockShowSecondsState();
     updateStartAtBootState();
     fontControl.setProgress((int) ((config.getFontSize() - 10) * 10));

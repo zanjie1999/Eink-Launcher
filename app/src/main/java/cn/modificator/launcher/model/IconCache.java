@@ -49,7 +49,7 @@ public class IconCache {
    * 如有必要，重新扫描外部存储中的自定义图标目录。
    *
    * @param hasExternalStorage 外部存储是否可用
-   * @param showCustomIcon     用户是否启用"显示自定义图标"（true 表示禁用替换）
+   * @param showCustomIcon     用户是否启用"显示自定义图标"
    * @return true 表示执行了实际扫描
    */
   public boolean refreshCustomIcons(boolean hasExternalStorage, boolean showCustomIcon) {
@@ -57,7 +57,7 @@ public class IconCache {
     Map<String, File> previous = new HashMap<>(customIconMap);
     customIconMap.clear();
 
-    if (hasExternalStorage && !showCustomIcon) {
+    if (hasExternalStorage && showCustomIcon) {
       File root = getIconDirectory();
       if (!root.exists()) {
         try {
@@ -150,6 +150,11 @@ public class IconCache {
     synchronized (labelCache) {
       labelCache.clear();
     }
+  }
+
+  /** 清除图标 Drawable 缓存（显示自定义图标开关切换时调用）。 */
+  public void clearIconCache() {
+    drawableCache.evictAll();
   }
 
   /** Release the least recently used icons under memory pressure. */

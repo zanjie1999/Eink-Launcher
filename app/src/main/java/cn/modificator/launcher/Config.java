@@ -34,7 +34,7 @@ public class Config {
   private static final float DEFAULT_FONT_SIZE = 14f;
   private static final int DEFAULT_APP_NAME_LINES = Integer.MAX_VALUE;
   private static final boolean DEFAULT_HIDE_DIVIDER = true;
-  private static final boolean DEFAULT_SHOW_STATUS_BAR = true;
+  private static final boolean DEFAULT_SHOW_STATUS_BAR = false;
   private static final boolean DEFAULT_SHOW_CUSTOM_ICON = false;
   private static final int DEFAULT_SORT_MODE = 0;
   private static final int DEFAULT_THEME_MODE = 3;

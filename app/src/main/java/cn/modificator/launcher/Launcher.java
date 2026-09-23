@@ -213,12 +213,41 @@ public class Launcher extends AppCompatActivity
     } else if (themeMode == 5) {
       // 亮色配色，但不绘制白色半透明背景，直接显示壁纸。
       AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+      applySystemBarIconAppearance(true);
       applyLauncherBackground(Color.TRANSPARENT);
     } else if (themeMode == 6) {
       // 暗色配色，但不绘制黑色半透明背景，直接显示壁纸。
       AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+      applySystemBarIconAppearance(false);
       applyLauncherBackground(Color.TRANSPARENT);
     }
+  }
+
+  private void applySystemBarIconAppearance(boolean darkIcons) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      int appearance = darkIcons
+          ? (android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+              | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS)
+          : 0;
+      getWindow().getInsetsController().setSystemBarsAppearance(appearance,
+          android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+              | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+      return;
+    }
+    int flags = getWindow().getDecorView().getSystemUiVisibility();
+    if (darkIcons) {
+      flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+      }
+    } else {
+      flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+      }
+    }
+    getWindow().getDecorView().setSystemUiVisibility(flags);
   }
 
   private void applyLauncherBackground(final int backgroundColor) {
@@ -226,9 +255,20 @@ public class Launcher extends AppCompatActivity
       @Override
       public void run() {
         findViewById(R.id.launcherBg).setBackgroundColor(backgroundColor);
+        int themeMode = config != null ? config.getThemeMode() : -1;
+        if (themeMode == 5) {
+          applySystemBarIconAppearance(true);
+        } else if (themeMode == 6) {
+          applySystemBarIconAppearance(false);
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
           getWindow().setStatusBarColor(backgroundColor);
           getWindow().setNavigationBarColor(backgroundColor);
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+            getWindow().setNavigationBarDividerColor(Color.TRANSPARENT);
+          }
         }
       }
     });
@@ -238,6 +278,12 @@ public class Launcher extends AppCompatActivity
   protected void onResume() {
     super.onResume();
     registerDynamicReceivers();
+    int themeMode = config != null ? config.getThemeMode() : -1;
+    if (themeMode == 5) {
+      applySystemBarIconAppearance(true);
+    } else if (themeMode == 6) {
+      applySystemBarIconAppearance(false);
+    }
     refreshIcons();
   }
 
@@ -475,6 +521,7 @@ public class Launcher extends AppCompatActivity
   @Override
   public void onShowCustomIconChanged(boolean show) {
     iconCache.markDirty();
+    iconCache.clearIconCache();
     refreshIcons();
   }
 
@@ -1402,9 +1449,9 @@ public class Launcher extends AppCompatActivity
   public void applyStatusBarVisibility() {
     int flags = WindowManager.LayoutParams.FLAG_FULLSCREEN;
     if (config.isShowStatusBar()) {
-      getWindow().setFlags(flags, flags);
-    } else {
       getWindow().clearFlags(flags);
+    } else {
+      getWindow().setFlags(flags, flags);
     }
   }
 
