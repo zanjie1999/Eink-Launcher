@@ -36,6 +36,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -79,6 +80,9 @@ public class Launcher extends AppCompatActivity
   private BatteryView batteryProgress;
   private TextView batteryStatus;
   private TextView textClock;
+  private View largeClockContainer;
+  private TextView largeClockTime;
+  private TextView largeClockDate;
   private ImageView settingIcon;
 
   // ---- Data ----
@@ -118,6 +122,7 @@ public class Launcher extends AppCompatActivity
   private static final int FOCUS_CLOCK = 2;
   private static final int FOCUS_BATTERY = 3;
   private static final int FOCUS_SETTING = 4;
+  private static final int FOCUS_LARGE_CLOCK = 5;
 
   // ---- Receivers ----
   private FTPReceiver ftpReceiver = new FTPReceiver();
@@ -364,8 +369,16 @@ public class Launcher extends AppCompatActivity
     batteryProgress = findViewById(R.id.batteryProgress);
     batteryStatus = findViewById(R.id.batteryStatus);
     textClock = findViewById(R.id.textClock);
+    largeClockContainer = findViewById(R.id.largeClockContainer);
+    largeClockTime = findViewById(R.id.largeClockTime);
+    largeClockDate = findViewById(R.id.largeClockDate);
     textClock.setBackgroundResource(R.drawable.footer_item_focus);
     textClock.setClickable(true);
+    View.OnClickListener clockClickListener = new View.OnClickListener() {
+      @Override public void onClick(View v) { clearKeyboardFocus(); openClockActivity(); }
+    };
+    largeClockTime.setOnClickListener(clockClickListener);
+    largeClockDate.setOnClickListener(clockClickListener);
 
     settingIcon = findViewById(R.id.toSetting);
     settingIconNormalWidth = settingIcon.getLayoutParams().width;
@@ -472,6 +485,7 @@ public class Launcher extends AppCompatActivity
     // 时间显示
     calendar = Calendar.getInstance();
     updateTimeShow();
+    updateLargeClockLayout();
 
     // 检测系统应用
     try {
@@ -529,6 +543,25 @@ public class Launcher extends AppCompatActivity
   public void onClockShowSecondsChanged(boolean show) {
     config.setClockShowSeconds(show);
     updateClockRefreshMode();
+    updateTimeShow();
+  }
+
+  @Override
+  public void onShowLargeClockChanged(boolean show) {
+    config.setShowLargeClock(show);
+    dataCenter.setLargeClockEnabled(show);
+    applyCurrentPageLayout();
+    updateTimeShow();
+    launcherView.selectFirstAvailable();
+    clearKeyboardFocus();
+  }
+
+  @Override
+  public void onBottomAlignIconsChanged(boolean align) {
+    config.setBottomAlignIcons(align);
+    launcherView.setBottomAlignIcons(align);
+    launcherView.selectFirstAvailable();
+    clearKeyboardFocus();
   }
 
   @Override
@@ -580,14 +613,66 @@ public class Launcher extends AppCompatActivity
         displayColNum = rowNum;
         displayRowNum = colNum;
       }
-      launcherView.configure(displayColNum, displayRowNum, config.isHideDivider());
+      boolean firstPageClock = config.isShowLargeClock()
+          && dataCenter != null && dataCenter.getPageIndex() == 0;
+      int gridRows = firstPageClock ? Math.max(1, displayRowNum - 2) : displayRowNum;
+      launcherView.configure(displayColNum, gridRows, config.isHideDivider());
     }
     if (dataCenter != null) {
       dataCenter.setGridSize(colNum, rowNum);
+      dataCenter.setLargeClockEnabled(config.isShowLargeClock());
+    }
+    if (dataCenter != null) {
+      applyCurrentPageLayout();
     }
     if (calendar != null) {
       updateTimeShow();
     }
+  }
+
+  private void applyCurrentPageLayout() {
+    int cols = config.getColNum();
+    int rows = config.getRowNum();
+    int displayCols = cols;
+    int displayRows = rows;
+    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+      displayCols = rows;
+      displayRows = cols;
+    }
+    boolean firstPageClock = config.isShowLargeClock() && dataCenter.getPageIndex() == 0;
+    int gridRows = firstPageClock ? Math.max(1, displayRows - 2) : displayRows;
+    launcherView.configure(displayCols, gridRows, config.isHideDivider());
+      launcherView.setBottomAlignIcons(config.isBottomAlignIcons());
+    ViewGroup.LayoutParams clockParams = largeClockContainer.getLayoutParams();
+    clockParams.height = 0;
+    clockParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
+    ((LinearLayout.LayoutParams) clockParams).weight = firstPageClock ? 2f : 0f;
+    largeClockContainer.setVisibility(firstPageClock ? View.VISIBLE : View.GONE);
+    ViewGroup.LayoutParams gridParams = launcherView.getLayoutParams();
+    ((LinearLayout.LayoutParams) gridParams).weight = firstPageClock
+        ? gridRows : 1f;
+    launcherView.setLayoutParams(gridParams);
+    updateFooterFocus();
+  }
+
+  private void updateLargeClockLayout() {
+    if (launcherView == null || config == null || dataCenter == null) return;
+    applyCurrentPageLayout();
+    updateLargeClockTextSize();
+  }
+
+  private void updateLargeClockTextSize() {
+    if (largeClockContainer == null || largeClockTime == null || largeClockDate == null) return;
+    largeClockContainer.post(new Runnable() {
+      @Override
+      public void run() {
+        int timeHeight = largeClockTime.getHeight();
+        if (timeHeight <= 0) return;
+        float timeTextSizePx = timeHeight * 0.78f;
+        largeClockTime.setTextSize(TypedValue.COMPLEX_UNIT_PX, timeTextSizePx);
+        largeClockDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, timeTextSizePx * 0.18f);
+      }
+    });
   }
 
   private void applyScreenOrientation(int mode) {
@@ -668,11 +753,15 @@ public class Launcher extends AppCompatActivity
   @Override
   public void onPageNext() {
     showNextPageAndHideSelection();
+    updateLargeClockLayout();
+    updateTimeShow();
   }
 
   @Override
   public void onPagePrev() {
     showLastPageAndHideSelection();
+    updateLargeClockLayout();
+    updateTimeShow();
   }
 
   private void showPowerMenu() {
@@ -770,7 +859,14 @@ public class Launcher extends AppCompatActivity
     }
     String weekdayText = new SimpleDateFormat("EEEE", locale).format(calendar.getTime());
 
+    boolean showLargeClock = config != null && config.isShowLargeClock();
+    largeClockContainer.setVisibility(showLargeClock && dataCenter != null
+        && dataCenter.getPageIndex() == 0 ? View.VISIBLE : View.GONE);
+    largeClockTime.setText(plainTimeText);
+    largeClockDate.setText(new SimpleDateFormat("yyyy年M月d日 E", locale).format(calendar.getTime()));
+    updateLargeClockTextSize();
     updateFooterLayout(dateText, shortDateText, plainTimeText, timeText, weekdayText);
+    textClock.setVisibility(showLargeClock ? View.GONE : View.VISIBLE);
   }
 
   private void updateFooterLayout(String dateText, String shortDateText,
@@ -1167,19 +1263,28 @@ public class Launcher extends AppCompatActivity
       return;
     }
 
+    if (focusArea == FOCUS_LARGE_CLOCK) {
+      if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) focusGrid(0);
+      return;
+    }
     if (focusArea == FOCUS_CLOCK || focusArea == FOCUS_BATTERY || focusArea == FOCUS_SETTING) {
       moveFooterFocus(keyCode);
       return;
     }
 
     if (keyCode == KeyEvent.KEYCODE_DPAD_UP && isOnTopRow()) {
-      expandNotifications();
+      if (config.isShowLargeClock() && dataCenter.getPageIndex() == 0) {
+        focusLargeClock();
+      } else {
+        expandNotifications();
+      }
       return;
     }
 
     if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && isOnBottomRow()) {
       lastGridIndex = launcherView.getSelectedIndex();
-      focusFooter(FOCUS_CLOCK);
+      if (config.isShowLargeClock()) focusFooter(FOCUS_SETTING);
+      else focusFooter(FOCUS_CLOCK);
       return;
     }
 
@@ -1191,11 +1296,13 @@ public class Launcher extends AppCompatActivity
     int colNum = launcherView.getColNum();
     if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && selectedIndex % colNum == 0) {
       if (dataCenter.showLastPage()) {
+        applyCurrentPageLayout();
         launcherView.setSelectedIndex(launcherView.getCrossPageTargetIndex(selectedIndex, false));
         focusGrid(launcherView.getSelectedIndex());
       }
     } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && selectedIndex % colNum == colNum - 1) {
       if (dataCenter.showNextPage()) {
+        applyCurrentPageLayout();
         launcherView.setSelectedIndex(launcherView.getCrossPageTargetIndex(selectedIndex, true));
         focusGrid(launcherView.getSelectedIndex());
       }
@@ -1208,11 +1315,11 @@ public class Launcher extends AppCompatActivity
     } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && focusArea == FOCUS_CLOCK) {
       focusFooter(FOCUS_BATTERY);
     } else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && focusArea == FOCUS_BATTERY) {
-      focusFooter(FOCUS_CLOCK);
+      focusFooter(config.isShowLargeClock() ? FOCUS_SETTING : FOCUS_CLOCK);
     } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && focusArea == FOCUS_BATTERY) {
       focusFooter(FOCUS_SETTING);
     } else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT && focusArea == FOCUS_SETTING) {
-      focusFooter(FOCUS_BATTERY);
+      focusFooter(config.isShowLargeClock() ? FOCUS_SETTING : FOCUS_BATTERY);
     }
   }
 
@@ -1240,6 +1347,8 @@ public class Launcher extends AppCompatActivity
       batteryProgress.performClick();
     } else if (focusArea == FOCUS_SETTING) {
       settingIcon.performClick();
+    } else if (focusArea == FOCUS_LARGE_CLOCK) {
+      largeClockTime.performClick();
     }
   }
 
@@ -1266,6 +1375,13 @@ public class Launcher extends AppCompatActivity
     updateFooterFocus();
   }
 
+  private void focusLargeClock() {
+    focusArea = FOCUS_LARGE_CLOCK;
+    launcherView.hideSelection();
+    largeClockTime.setSelected(true);
+    largeClockDate.setSelected(false);
+  }
+
   private void clearKeyboardFocus() {
     focusArea = FOCUS_NONE;
     confirmLongPressed = false;
@@ -1276,6 +1392,10 @@ public class Launcher extends AppCompatActivity
   private void updateFooterFocus() {
     if (textClock != null) {
       textClock.setSelected(focusArea == FOCUS_CLOCK);
+    }
+    if (largeClockTime != null) {
+      largeClockTime.setSelected(focusArea == FOCUS_LARGE_CLOCK);
+      largeClockDate.setSelected(focusArea == FOCUS_LARGE_CLOCK);
     }
     if (batteryProgress != null) {
       batteryProgress.setSelected(focusArea == FOCUS_BATTERY);
@@ -1322,12 +1442,14 @@ public class Launcher extends AppCompatActivity
 
   private void showNextPageAndSelectFirst() {
     if (dataCenter.showNextPage()) {
+      applyCurrentPageLayout();
       focusGrid(0);
     }
   }
 
   private void showLastPageAndSelectFirst() {
     if (dataCenter.showLastPage()) {
+      applyCurrentPageLayout();
       focusGrid(0);
     }
   }
@@ -1345,6 +1467,7 @@ public class Launcher extends AppCompatActivity
 
   private void showNextPageAndHideSelection() {
     if (dataCenter.showNextPage()) {
+      applyCurrentPageLayout();
       launcherView.selectFirstAvailable();
       clearKeyboardFocus();
     }
@@ -1352,6 +1475,7 @@ public class Launcher extends AppCompatActivity
 
   private void showLastPageAndHideSelection() {
     if (dataCenter.showLastPage()) {
+      applyCurrentPageLayout();
       launcherView.selectFirstAvailable();
       clearKeyboardFocus();
     }

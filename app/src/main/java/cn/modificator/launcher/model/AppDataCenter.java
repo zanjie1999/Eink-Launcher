@@ -51,6 +51,7 @@ public class AppDataCenter {
   private int pageCount = 0;
   private int colNum = 5;
   private int rowNum = 5;
+  private boolean largeClockEnabled;
   private LauncherAdapter adapter;
   private AppItemBinder binder;
   private TextView pageStatus;
@@ -117,6 +118,14 @@ public class AppDataCenter {
   }
 
   /** 批量设置行列数，只触发一次分页更新 */
+  public void setLargeClockEnabled(boolean enabled) {
+    this.largeClockEnabled = enabled;
+    updatePageCount();
+    setPageShow();
+  }
+
+  public int getPageIndex() { return pageIndex; }
+
   public void setGridSize(int colNum, int rowNum) {
     this.colNum = colNum;
     this.rowNum = rowNum;
@@ -242,8 +251,10 @@ public class AppDataCenter {
     if (adapter == null || pageStatus == null) return;
     int itemCount = colNum * rowNum;
     if (itemCount <= 0) return;
-    int pageStart = pageIndex * itemCount;
-    int pageEnd = Math.min(pageStart + itemCount, mApps.size());
+    int firstPageCount = getFirstPageItemCount();
+    int pageStart = pageIndex == 0 ? 0 : firstPageCount + (pageIndex - 1) * itemCount;
+    int pageCapacity = pageIndex == 0 ? firstPageCount : itemCount;
+    int pageEnd = Math.min(pageStart + pageCapacity, mApps.size());
     adapter.setAppList(mApps.subList(pageStart, pageEnd));
     pageStatus.setText((pageIndex + 1) + "/" + (pageCount + 1));
   }
@@ -255,9 +266,16 @@ public class AppDataCenter {
       pageIndex = 0;
       return;
     }
-    pageCount = mApps.size() / itemCount - (mApps.size() % itemCount == 0 ? 1 : 0);
-    pageCount = Math.max(pageCount, 0);
+    int firstPageCount = getFirstPageItemCount();
+    int remaining = Math.max(0, mApps.size() - firstPageCount);
+    pageCount = remaining == 0 ? 0 : 1 + (remaining - 1) / itemCount;
     pageIndex = Math.min(pageIndex, pageCount);
+  }
+
+  private int getFirstPageItemCount() {
+    if (!largeClockEnabled) return colNum * rowNum;
+    int firstPageRows = Math.max(1, rowNum - 2);
+    return Math.min(colNum * firstPageRows, colNum * rowNum);
   }
 
   private void sortApps(List<ResolveInfo> apps, PackageManager packageManager, int requestSortMode) {

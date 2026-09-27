@@ -86,6 +86,8 @@
     <string name="show_statusbar">显示状态栏</string>
     <string name="show_wifi_name">显示WiFi名字</string>
     <string name="clock_show_seconds">时钟显示秒</string>
+    <string name="show_large_clock">显示大时间</string>
+    <string name="bottom_align_icons">图标从底部排列</string>
     <string name="start_at_boot">开机启动</string>
     <string name="notification_click_back_launcher">点击这里回到桌面</string>
     <string name="app_show_name">App 名字</string>

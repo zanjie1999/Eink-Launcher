@@ -71,6 +71,8 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
     void onShowStatusBarChanged(boolean show);
     void onShowCustomIconChanged(boolean show);
     void onClockShowSecondsChanged(boolean show);
+    void onShowLargeClockChanged(boolean show);
+    void onBottomAlignIconsChanged(boolean align);
     void onSortModeChanged(int mode);
     void onThemeModeChanged(int mode);
     void onScreenOrientationChanged(int mode);
@@ -93,6 +95,8 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
   private TextView showStatusBar;
   private TextView showCustomIcon;
   private TextView clockShowSeconds;
+  private TextView showLargeClock;
+  private TextView bottomAlignIcons;
   private TextView startAtBoot;
   private Config config;
   private View changeFontSize;
@@ -146,6 +150,8 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
     showStatusBar = rootView.findViewById(R.id.showStatusBar);
     showCustomIcon = rootView.findViewById(R.id.showCustomIcon);
     clockShowSeconds = rootView.findViewById(R.id.clockShowSeconds);
+    showLargeClock = rootView.findViewById(R.id.showLargeClock);
+    bottomAlignIcons = rootView.findViewById(R.id.bottomAlignIcons);
     startAtBoot = rootView.findViewById(R.id.startAtBoot);
     showWifiName = rootView.findViewById(R.id.showWifiName);
     ftpStatus = rootView.findViewById(R.id.ftp_status);
@@ -169,6 +175,8 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
     hideDivider.setOnClickListener(this);
     showCustomIcon.setOnClickListener(this);
     clockShowSeconds.setOnClickListener(this);
+    showLargeClock.setOnClickListener(this);
+    bottomAlignIcons.setOnClickListener(this);
     startAtBoot.setOnClickListener(this);
     showWifiName.setOnClickListener(this);
     changeFontSize.setOnClickListener(this);
@@ -186,6 +194,8 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
     hideDivider.setText(config.isHideDivider() ? "显示分隔线" : "隐藏分隔线");
     showCustomIcon.getPaint().setStrikeThruText(!config.isShowCustomIcon());
     updateClockShowSecondsState();
+    showLargeClock.getPaint().setStrikeThruText(!config.isShowLargeClock());
+    bottomAlignIcons.getPaint().setStrikeThruText(!config.isBottomAlignIcons());
     updateStartAtBootState();
     fontControl.setProgress((int) ((config.getFontSize() - 10) * 10));
   }
@@ -202,6 +212,8 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
         showWifiName,
         showCustomIcon,
         clockShowSeconds,
+        showLargeClock,
+        bottomAlignIcons,
         startAtBoot,
         changeFontSize,
         deleteApp,
@@ -387,6 +399,10 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
       handleToggleCustomIcon();
     } else if (id == R.id.clockShowSeconds) {
       handleToggleClockShowSeconds();
+    } else if (id == R.id.showLargeClock) {
+      handleToggleLargeClock();
+    } else if (id == R.id.bottomAlignIcons) {
+      handleToggleBottomAlignIcons();
     } else if (id == R.id.startAtBoot) {
       handleToggleStartAtBoot();
     } else if (id == R.id.setWallpaper) {
@@ -503,6 +519,25 @@ public class SettingFragment extends Fragment implements View.OnClickListener {
 
   private void updateClockShowSecondsState() {
     clockShowSeconds.getPaint().setStrikeThruText(!config.isClockShowSeconds());
+  }
+
+  private void handleToggleLargeClock() {
+    boolean show = !config.isShowLargeClock();
+    config.setShowLargeClock(show);
+    showLargeClock.getPaint().setStrikeThruText(!show);
+    Activity activity = getActivity();
+    OnSettingChangeListener settingListener = listener;
+    if (activity != null) {
+      activity.getFragmentManager().popBackStackImmediate();
+      settingListener.onShowLargeClockChanged(show);
+    }
+  }
+
+  private void handleToggleBottomAlignIcons() {
+    boolean align = !config.isBottomAlignIcons();
+    config.setBottomAlignIcons(align);
+    bottomAlignIcons.getPaint().setStrikeThruText(!align);
+    listener.onBottomAlignIconsChanged(align);
   }
 
   private void handleToggleStartAtBoot() {

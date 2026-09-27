@@ -189,9 +189,11 @@ public class LauncherAdapter {
   void updateSelection(int selectedIndex, boolean visible) {
     for (int i = 0; i < holders.size(); i++) {
       ItemViewHolder holder = holders.get(i);
-      holder.focusFrame.setVisibility(visible && i == selectedIndex && i < dataList.size()
-          ? View.VISIBLE
-          : View.GONE);
+      int leadingEmpty = attachedView != null && attachedView.isBottomAlignIcons()
+          ? Math.max(0, holders.size() - dataList.size()) : 0;
+      holder.focusFrame.setVisibility(visible && i == selectedIndex + leadingEmpty
+          && selectedIndex >= 0 && selectedIndex < dataList.size()
+          ? View.VISIBLE : View.GONE);
     }
   }
 

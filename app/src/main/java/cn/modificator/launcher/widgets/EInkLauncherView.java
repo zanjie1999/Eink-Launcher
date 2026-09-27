@@ -42,6 +42,7 @@ public class EInkLauncherView extends ViewGroup {
   // 网格参数
   private int rowNum = 5;
   private int colNum = 5;
+  private boolean bottomAlignIcons;
   private boolean hideDivider = false;
 
   // 外部依赖
@@ -126,6 +127,16 @@ public class EInkLauncherView extends ViewGroup {
     resetGrid();
   }
 
+  public void setBottomAlignIcons(boolean align) {
+    if (bottomAlignIcons == align) return;
+    bottomAlignIcons = align;
+    resetGrid();
+  }
+
+  public boolean isBottomAlignIcons() {
+    return bottomAlignIcons;
+  }
+
   public void setHideDivider(boolean hideDivider) {
     this.hideDivider = hideDivider;
     resetGrid();
@@ -154,15 +165,16 @@ public class EInkLauncherView extends ViewGroup {
     int cellH = h / rowNum;
     int startLeft = getPaddingLeft();
     int startTop = getPaddingTop();
+    int itemCount = adapter != null ? adapter.getItemCount() : 0;
+    int leadingEmpty = bottomAlignIcons ? Math.max(0, rowNum * colNum - itemCount) : 0;
 
-    for (int row = 0; row < rowNum; row++) {
-      for (int col = 0; col < colNum; col++) {
-        int index = row * colNum + col;
-        if (index >= getChildCount()) return;
-        getChildAt(index).layout(
-            startLeft + col * cellW, startTop + row * cellH,
-            startLeft + (col + 1) * cellW, startTop + (row + 1) * cellH);
-      }
+    for (int index = 0; index < getChildCount(); index++) {
+      int visualIndex = index + leadingEmpty;
+      int row = visualIndex / colNum;
+      int col = visualIndex % colNum;
+      getChildAt(index).layout(
+          startLeft + col * cellW, startTop + row * cellH,
+          startLeft + (col + 1) * cellW, startTop + (row + 1) * cellH);
     }
   }
 
@@ -201,8 +213,10 @@ public class EInkLauncherView extends ViewGroup {
 
     if (adapter.getHolderCount() == targetCount && getChildCount() == targetCount) {
       // 数量不变，仅刷新背景
+      int leadingEmpty = bottomAlignIcons
+          ? Math.max(0, targetCount - adapter.getItemCount()) : 0;
       for (int i = 0; i < targetCount; i++) {
-        getChildAt(i).setBackgroundResource(getItemBackground(i));
+        getChildAt(i).setBackgroundResource(getItemBackground(i + leadingEmpty));
       }
       rebind();
       return;
@@ -214,7 +228,9 @@ public class EInkLauncherView extends ViewGroup {
 
     for (int i = 0; i < targetCount; i++) {
       LauncherAdapter.ItemViewHolder holder = adapter.createViewHolder(this);
-      holder.itemView.setBackgroundResource(getItemBackground(i));
+      int leadingEmpty = bottomAlignIcons
+          ? Math.max(0, targetCount - adapter.getItemCount()) : 0;
+      holder.itemView.setBackgroundResource(getItemBackground(i + leadingEmpty));
       addView(holder.itemView);
     }
     rebind();

@@ -25,6 +25,8 @@ public class Config {
   public static final String KEY_SORT_MODE = "launcherSortMode";
   public static final String KEY_THEME_MODE = "themeMode";
   public static final String KEY_CLOCK_SHOW_SECONDS = "launcherClockShowSeconds";
+  public static final String KEY_SHOW_LARGE_CLOCK = "launcherShowLargeClock";
+  public static final String KEY_BOTTOM_ALIGN_ICONS = "launcherBottomAlignIcons";
   public static final String KEY_SCREEN_ORIENTATION = "launcherScreenOrientation";
   public static final String KEY_START_AT_BOOT = "launcherStartAtBoot";
 
@@ -39,6 +41,8 @@ public class Config {
   private static final int DEFAULT_SORT_MODE = 0;
   private static final int DEFAULT_THEME_MODE = 3;
   private static final boolean DEFAULT_CLOCK_SHOW_SECONDS = false;
+  private static final boolean DEFAULT_SHOW_LARGE_CLOCK = true;
+  private static final boolean DEFAULT_BOTTOM_ALIGN_ICONS = false;
   private static final int DEFAULT_SCREEN_ORIENTATION = 0;
   private static final boolean DEFAULT_START_AT_BOOT = false;
 
@@ -55,6 +59,8 @@ public class Config {
   private boolean showStatusBar;
   private boolean showCustomIcon;
   private boolean clockShowSeconds;
+  private boolean showLargeClock;
+  private boolean bottomAlignIcons;
   private boolean startAtBoot;
   private int sortMode = -1;
   private int themeMode = -1;
@@ -69,6 +75,8 @@ public class Config {
     this.showStatusBar = prefs.getBoolean(KEY_SHOW_STATUS_BAR, DEFAULT_SHOW_STATUS_BAR);
     this.showCustomIcon = prefs.getBoolean(KEY_SHOW_CUSTOM_ICON, DEFAULT_SHOW_CUSTOM_ICON);
     this.clockShowSeconds = prefs.getBoolean(KEY_CLOCK_SHOW_SECONDS, DEFAULT_CLOCK_SHOW_SECONDS);
+    this.showLargeClock = prefs.getBoolean(KEY_SHOW_LARGE_CLOCK, DEFAULT_SHOW_LARGE_CLOCK);
+    this.bottomAlignIcons = prefs.getBoolean(KEY_BOTTOM_ALIGN_ICONS, DEFAULT_BOTTOM_ALIGN_ICONS);
     this.startAtBoot = prefs.getBoolean(KEY_START_AT_BOOT, DEFAULT_START_AT_BOOT);
     this.appNameLines = prefs.getInt(KEY_APP_NAME_LINES, DEFAULT_APP_NAME_LINES);
   }
@@ -222,6 +230,20 @@ public class Config {
   public void setClockShowSeconds(boolean show) {
     this.clockShowSeconds = show;
     prefs.edit().putBoolean(KEY_CLOCK_SHOW_SECONDS, show).apply();
+  }
+
+  public boolean isShowLargeClock() { return showLargeClock; }
+
+  public void setShowLargeClock(boolean show) {
+    this.showLargeClock = show;
+    prefs.edit().putBoolean(KEY_SHOW_LARGE_CLOCK, show).apply();
+  }
+
+  public boolean isBottomAlignIcons() { return bottomAlignIcons; }
+
+  public void setBottomAlignIcons(boolean align) {
+    this.bottomAlignIcons = align;
+    prefs.edit().putBoolean(KEY_BOTTOM_ALIGN_ICONS, align).apply();
   }
 
   // ---- 开机启动 ----

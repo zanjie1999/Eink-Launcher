@@ -1,10 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/launcherBg"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/mainBgColor">
+
+    <LinearLayout
+        android:id="@+id/largeClockContainer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:weightSum="4"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/largeClockTime"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="3"
+            android:gravity="bottom|center_horizontal"
+            android:fontFamily="@font/zyymeclock"
+            android:textColor="@color/textColor"
+            android:textSize="1sp"
+            android:maxLines="1"
+            android:includeFontPadding="false"
+            android:clickable="true" />
+        <TextView
+            android:id="@+id/largeClockDate"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="top|center_horizontal"
+            android:textColor="@color/textColor"
+            android:textSize="1sp"
+            android:maxLines="1"
+            android:includeFontPadding="false"
+            android:clickable="true" />
+    </LinearLayout>
 
     <cn.modificator.launcher.widgets.EInkLauncherView
         android:id="@+id/mList"
@@ -14,12 +51,12 @@
         android:layout_marginLeft="10dp"
         android:layout_marginRight="10dp"
         android:layout_marginTop="10dp"
-        android:layout_weight="1"></cn.modificator.launcher.widgets.EInkLauncherView>
+        android:layout_weight="3"></cn.modificator.launcher.widgets.EInkLauncherView>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0.7dp"
-        android:background="@color/dividerColor" />
+<!--    <View-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0.7dp"-->
+<!--        android:background="@color/dividerColor" />-->
 
     <FrameLayout
         android:id="@+id/footerContainer"
