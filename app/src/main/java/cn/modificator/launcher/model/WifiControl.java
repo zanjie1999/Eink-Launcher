@@ -48,6 +48,7 @@ public class WifiControl {
   public static void init(Context context) {
     release();
     instance = new WifiControl(context.getApplicationContext());
+    reloadWifiName();
   }
 
   private WifiControl(Context context) {
@@ -91,14 +92,17 @@ public class WifiControl {
   }
 
   public static void reloadWifiName() {
-    if (instance.showNameRes == R.string.wifi_status_connected
-        && instance.connectWifiName != null
-        && instance.connectWifiName.contains("unknown ssid")) {
-      instance.connectWifiName = instance.wifiManager.getConnectionInfo().getSSID().replace("\"", "");
-      if (!TextUtils.isEmpty(instance.connectWifiName)) {
-        instance.connectWifiName = "\n" + instance.connectWifiName;
-      }
+    if (instance == null || instance.wifiManager == null) return;
+    try {
+      String ssid = instance.wifiManager.getConnectionInfo().getSSID();
+      if (ssid == null) return;
+      ssid = ssid.replace("\"", "");
+      if (TextUtils.isEmpty(ssid) || "<unknown ssid>".equalsIgnoreCase(ssid)) return;
+      instance.connectWifiName = "\n" + ssid;
+      instance.showNameRes = R.string.wifi_status_connected;
       instance.updateStatus();
+    } catch (SecurityException ignored) {
+      // Android 8+ requires location permission for SSID access.
     }
   }
 

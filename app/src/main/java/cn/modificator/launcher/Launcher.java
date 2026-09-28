@@ -102,6 +102,9 @@ public class Launcher extends AppCompatActivity
   private final Handler clockHandler = new Handler(Looper.getMainLooper());
   private boolean clockTickerRunning = false;
   private boolean batteryStatusRequestedVisible = false;
+  private float swipeDownX;
+  private float swipeDownY;
+  private boolean swipeStartedInContent;
   private int settingIconNormalWidth;
   private int settingIconNormalHeight;
   private int settingIconNormalHorizontalPadding;
@@ -290,6 +293,7 @@ public class Launcher extends AppCompatActivity
       applySystemBarIconAppearance(false);
     }
     refreshIcons();
+    WifiControl.reloadWifiName();
   }
 
   @Override
@@ -322,10 +326,42 @@ public class Launcher extends AppCompatActivity
 
   @Override
   public boolean dispatchTouchEvent(MotionEvent ev) {
-    if (ev.getActionMasked() == MotionEvent.ACTION_DOWN) {
-      clearKeyboardFocus();
+    switch (ev.getActionMasked()) {
+      case MotionEvent.ACTION_DOWN:
+        clearKeyboardFocus();
+        swipeDownX = ev.getX();
+        swipeDownY = ev.getY();
+        int contentTop = largeClockContainer != null ? largeClockContainer.getTop() : 0;
+        int contentBottom = getSwipeContentBottom();
+        swipeStartedInContent = swipeDownY >= contentTop && swipeDownY <= contentBottom;
+        break;
+      case MotionEvent.ACTION_UP:
+        float dx = ev.getX() - swipeDownX;
+        float dy = ev.getY() - swipeDownY;
+        float threshold = Math.min(getWindow().getDecorView().getWidth(),
+            getWindow().getDecorView().getHeight()) / 6f;
+        float primary = Math.abs(dx) >= Math.abs(dy) ? dx : dy;
+        boolean endedInContent = ev.getY() >= (largeClockContainer != null
+            ? largeClockContainer.getTop() : 0)
+            && ev.getY() <= getSwipeContentBottom();
+        if (swipeStartedInContent && endedInContent && Math.abs(primary) > threshold) {
+          if (primary > 0) {
+            onPagePrev();
+          } else {
+            onPageNext();
+          }
+          return true;
+        }
+        break;
     }
     return super.dispatchTouchEvent(ev);
+  }
+
+  private int getSwipeContentBottom() {
+    if (launcherView != null && launcherView.getVisibility() == View.VISIBLE) {
+      return launcherView.getBottom();
+    }
+    return largeClockContainer != null ? largeClockContainer.getBottom() : 0;
   }
 
   @Override
@@ -606,20 +642,20 @@ public class Launcher extends AppCompatActivity
   }
 
   private void applyGridSize(int colNum, int rowNum) {
+    int displayColNum = colNum;
+    int displayRowNum = rowNum;
+    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+      displayColNum = rowNum;
+      displayRowNum = colNum;
+    }
     if (launcherView != null) {
-      int displayColNum = colNum;
-      int displayRowNum = rowNum;
-      if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-        displayColNum = rowNum;
-        displayRowNum = colNum;
-      }
       boolean firstPageClock = config.isShowLargeClock()
           && dataCenter != null && dataCenter.getPageIndex() == 0;
       int gridRows = firstPageClock ? Math.max(1, displayRowNum - 2) : displayRowNum;
       launcherView.configure(displayColNum, gridRows, config.isHideDivider());
     }
     if (dataCenter != null) {
-      dataCenter.setGridSize(colNum, rowNum);
+      dataCenter.setGridSize(displayColNum, displayRowNum);
       dataCenter.setLargeClockEnabled(config.isShowLargeClock());
     }
     if (dataCenter != null) {
@@ -643,13 +679,15 @@ public class Launcher extends AppCompatActivity
     int gridRows = firstPageClock ? Math.max(1, displayRows - 2) : displayRows;
     launcherView.configure(displayCols, gridRows, config.isHideDivider());
       launcherView.setBottomAlignIcons(config.isBottomAlignIcons());
+    boolean clockOnlyPage = firstPageClock && displayRows < 3;
+    launcherView.setVisibility(clockOnlyPage ? View.GONE : View.VISIBLE);
     ViewGroup.LayoutParams clockParams = largeClockContainer.getLayoutParams();
     clockParams.height = 0;
     clockParams.width = ViewGroup.LayoutParams.MATCH_PARENT;
     ((LinearLayout.LayoutParams) clockParams).weight = firstPageClock ? 2f : 0f;
     largeClockContainer.setVisibility(firstPageClock ? View.VISIBLE : View.GONE);
     ViewGroup.LayoutParams gridParams = launcherView.getLayoutParams();
-    ((LinearLayout.LayoutParams) gridParams).weight = firstPageClock
+    ((LinearLayout.LayoutParams) gridParams).weight = clockOnlyPage ? 0f : firstPageClock
         ? gridRows : 1f;
     launcherView.setLayoutParams(gridParams);
     updateFooterFocus();
@@ -667,8 +705,16 @@ public class Launcher extends AppCompatActivity
       @Override
       public void run() {
         int timeHeight = largeClockTime.getHeight();
-        if (timeHeight <= 0) return;
-        float timeTextSizePx = timeHeight * 0.78f;
+        int timeWidth = largeClockTime.getWidth();
+        CharSequence timeText = largeClockTime.getText();
+        if (timeHeight <= 0 || timeWidth <= 0 || timeText == null || timeText.length() == 0) return;
+
+        float heightLimitedSize = timeHeight * 0.78f;
+        float currentSize = largeClockTime.getTextSize();
+        float measuredWidth = largeClockTime.getPaint().measureText(timeText + ":", 0, timeText.length() + 1);
+        float widthLimitedSize = measuredWidth > 0
+            ? currentSize * timeWidth / measuredWidth : heightLimitedSize;
+        float timeTextSizePx = Math.min(heightLimitedSize, widthLimitedSize);
         largeClockTime.setTextSize(TypedValue.COMPLEX_UNIT_PX, timeTextSizePx);
         largeClockDate.setTextSize(TypedValue.COMPLEX_UNIT_PX, timeTextSizePx * 0.18f);
       }

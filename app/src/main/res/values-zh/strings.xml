@@ -91,7 +91,7 @@
     <string name="start_at_boot">开机启动</string>
     <string name="notification_click_back_launcher">点击这里回到桌面</string>
     <string name="app_show_name">App 名字</string>
-    <string name="setting_sort_mode">排序方式</string>
+    <string name="setting_sort_mode">排序</string>
     <string name="setting_screen_orientation">屏幕方向</string>
     <string name="sort_need_usage_permission">此排序模式需要授予使用情况访问权限</string>
     <string name="launch_failed">启动失败</string>

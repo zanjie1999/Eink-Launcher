@@ -274,6 +274,7 @@ public class AppDataCenter {
 
   private int getFirstPageItemCount() {
     if (!largeClockEnabled) return colNum * rowNum;
+    if (rowNum < 3) return 0;
     int firstPageRows = Math.max(1, rowNum - 2);
     return Math.min(colNum * firstPageRows, colNum * rowNum);
   }
